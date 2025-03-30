@@ -2,7 +2,19 @@
 
 import generateSummaryFromGemini from "@/lib/geminiAI";
 import { fetchAndExtractPdfText } from "@/lib/langchain";
-// import { generateSummaryFromOpenAI } from "@/lib/openAi";
+import { formatFileNameAsTitle } from "@/utils/format-utils";
+// import { generateSummaryFromOpenAI } from "@/lib/openAi"
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+interface PdfSummaryType {
+  userId: string;
+  original_file_url: string;
+  summary_text: string;
+  title: string;
+  file_name: string;
+}
 
 export async function generatePdfSummary(
   uploadResponse: [
@@ -73,6 +85,8 @@ export async function generatePdfSummary(
         data: null,
       };
     }
+
+    const formatedFileName  = formatFileNameAsTitle(__filename);
     return {
       sucess: true,
       message: "Summery generated",
@@ -85,6 +99,74 @@ export async function generatePdfSummary(
       success: false,
       message: "File upload Failed",
       data: null,
+    };
+  }
+}
+
+async function savePdfSummary({
+  userId,
+  original_file_url,
+  summary_text,
+  title,
+  file_name,
+}: PdfSummaryType) {
+  try {
+    const response = await prisma.pdf_summary.create({
+      data: {
+        userId,
+        original_file_url,
+        summary_text,
+        title,
+        file_name,
+      },
+    });
+    return response;
+  } catch (error) {
+    console.error("Error while saving PDF summary", error);
+    throw error;
+  }
+}
+
+export async function storePdfSummaryAction({
+  original_file_url,
+  summary_text,
+  title,
+  file_name,
+}: PdfSummaryType) {
+  // user logged in
+
+  // save the pdf summary
+  let savedSummary;
+  try {
+    const userId = "123e4567-e89b-12d3-a456-426614174000";
+    if (!userId) {
+      return {
+        success: false,
+        message: "User not found",
+      };
+    }
+    savedSummary = await savePdfSummary({
+      userId,
+      original_file_url,
+      summary_text,
+      title,
+      file_name,
+    });
+
+    if(!savedSummary){
+      return {
+        success: false,
+        message: "Failed to save pdf summary, please try again ",
+      };
+    }
+    return {
+      success: true,
+      message: " pdf summary saved ",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Error saving pdf",
     };
   }
 }

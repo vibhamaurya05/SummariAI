@@ -4,7 +4,7 @@ import { z } from "zod";
 import UploadPdfFrom from "./components/custome/uploadForm";
 import { useUploadThing } from "@/utils/uploadthings";
 import { toast } from "sonner";
-import { generatePdfSummary } from "@/actions/upload-actions";
+import { generatePdfSummary, storePdfSummaryAction } from "@/actions/upload-actions";
 import { useRef, useState } from "react";
 // zod schema
 const schema = z.object({
@@ -68,14 +68,34 @@ export default function Home() {
   
   
       // parse the pdf using lann chain
+      toast('parsing the pdf using langchain! hang tight langchain is working')
   
       const result = await generatePdfSummary(resp)
-      const { data = null, message = null} = result || {};
-      if(data){
-        toast('Hang Tight we are savning pdf!');
-  
-        formRef.current?.reset();
+      const { data = null, message = null } = result || {};
+      if (data) {
+        toast("Hang Tight, we are saving the PDF!");
+      
+        if (data.summary) {
+          const storeResult = await storePdfSummaryAction({
+            userId: "123e4567-e89b-12d3-a456-426614174000", // Provide userId explicitly
+            summary_text: data.summary,
+            original_file_url: resp[0]?.serverData?.file?.url || "",
+            title: "Untitled", // Use a default title since `data.title` does not exist
+            file_name: file.name,
+          });
+      
+          if (storeResult?.success) {
+            toast("Summary Saved!");
+            setIsLoading(false)
+          } else {
+            toast("Failed to save summary.");
+          }
+        } else {
+          toast("No summary generated.");
+        }
       }
+      formRef.current?.reset();
+//TODO: redirect the user to homepage
   
       console.log({result})
       // now get summmary of the pdf using ai
@@ -86,6 +106,8 @@ export default function Home() {
       formRef.current?.reset();
       setIsLoading(false)
       
+    } finally{
+      setIsLoading(false)
     }
    
   };
