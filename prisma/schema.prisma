@@ -20,7 +20,7 @@ enum UserStatus{
 }
 enum PdfStatus{
   PENDING
-  COPLETED
+  COMPLETED
   FAILED
 }
 
@@ -43,7 +43,7 @@ model pdf_summary {
   summary_text      String
   title             String
   file_name         String
-  status            PdfStatus @default(PENDING)
+  status            PdfStatus @default(COMPLETED)
   user              User @relation(fields: [userId], references: [id],onDelete: Cascade)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt

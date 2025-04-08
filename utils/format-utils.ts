@@ -1,12 +1,26 @@
 export function formatFileNameAsTitle(fileName: string) {
-  const withoutExtension = fileName.replace(/\.[^/.]+$/, "");
-  const withSpaces = withoutExtension
-    .replace(/[-_]+/g, "")
-    .replace(/([a-z])([A-Z])/g, "$1 $2");
+  let withoutExtension = fileName.replace(/\.[^/.]+$/, ""); 
+  withoutExtension = withoutExtension.replace(/^#+/, ""); 
 
-  return withSpaces
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ")
+ 
+  const firstLine = withoutExtension
+    .split("\n") 
+    .map((line) => line.trim()) 
+    .find((line) => line.length > 0) || ""; 
+
+
+  const cleanedTitle = firstLine.replace(/[\p{Emoji_Presentation}\p{Emoji}\p{So}]+/gu, "");
+
+
+  const formattedTitle = cleanedTitle
+    .replace(/[-_]+/g, " ") 
+    .replace(/([a-z])([A-Z])/g, "$1 $2") 
+    .split(" ") 
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()) 
+    .join(" ") 
     .trim();
+
+  return formattedTitle;
 }
+
+

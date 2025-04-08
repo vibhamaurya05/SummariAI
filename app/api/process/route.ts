@@ -1,0 +1,122 @@
+
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { addChunks, clearStore, DocumentChunk } from '@/lib/store';
+import { CheerioWebBaseLoader } from "@langchain/community/document_loaders/web/cheerio";
+
+const API_KEY = process.env.GOOGLE_API_KEY!;
+const EMBEDDING_MODEL_NAME = 'models/text-embedding-004';
+
+const genAI = new GoogleGenerativeAI(API_KEY);
+const model = genAI.getGenerativeModel({ model: EMBEDDING_MODEL_NAME });
+
+// --- Helper Functions ---
+
+function splitText(text: string, chunkSize = 500, overlap = 50): string[] {
+  if (!text) return [];
+  const chunks: string[] = [];
+  let start = 0;
+  while (start < text.length) {
+    const end = start + chunkSize;
+    chunks.push(text.slice(start, end));
+    start += chunkSize - overlap;
+    if (start + overlap >= text.length) {
+      if (end < text.length) {
+        chunks.push(text.slice(end));
+      }
+      break;
+    }
+  }
+  return chunks.filter(
+    chunk => chunk.trim().length > overlap / 2 || chunk.trim().length === text.trim().length
+  );
+}
+
+async function embedChunks(chunks: string[]): Promise<DocumentChunk[]> {
+  const maxBatchSize = 100;
+  const embeddedChunks: DocumentChunk[] = [];
+
+  for (let i = 0; i < chunks.length; i += maxBatchSize) {
+    const chunkBatch = chunks.slice(i, i + maxBatchSize);
+
+    const result = await model.batchEmbedContents({
+      requests: chunkBatch.map(chunk => ({
+        content: { parts: [{ text: chunk }] },
+      })),
+    });
+
+    const embeddings = result.embeddings;
+
+    if (embeddings.length !== chunkBatch.length) {
+      throw new Error('Mismatch between chunks and embeddings in batch');
+    }
+
+    const processedBatch = chunkBatch.map((chunk, index) => ({
+      text: chunk,
+      embedding: embeddings[index].values,
+    }));
+
+    embeddedChunks.push(...processedBatch);
+  }
+
+  return embeddedChunks;
+}
+
+
+// --- API Route Handler ---
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { text, url: webUrl } = body;
+    let webpageText = '';
+
+    if (!text && !webUrl) {
+      return Response.json({ message: 'Text or URL is required.' }, { status: 400 });
+    }
+
+    if (webUrl) {
+      try {
+        console.log('Fetching webpage text from:', webUrl);
+
+        const loaderWithSelector = new CheerioWebBaseLoader(webUrl, {
+          selector: "p",
+        });
+
+        const docsWithSelector = await loaderWithSelector.load();
+        webpageText = docsWithSelector.map(doc => doc.pageContent).join('\n');
+
+        if (!webpageText.trim()) {
+          return Response.json({ message: 'Failed to extract any text from the webpage.' }, { status: 400 });
+        }
+
+        console.log('Successfully fetched webpage text.');
+      } catch (fetchErr: any) {
+        console.error('Failed to load webpage:', fetchErr.message);
+        return Response.json({ message: 'Failed to load or parse webpage.', error: fetchErr.message }, { status: 400 });
+      }
+    }
+
+    await clearStore();
+
+    const input = text || webpageText || "";
+    const chunks = splitText(input);
+
+    if (chunks.length === 0) {
+      return Response.json({ message: 'Could not split text into chunks.' }, { status: 400 });
+    }
+
+    const embeddedChunks = await embedChunks(chunks);
+    await addChunks(embeddedChunks);
+
+    return Response.json({
+      message: `Successfully processed and stored ${embeddedChunks.length} chunks.`,
+    });
+  } catch (error: any) {
+    console.error('Error in process route:', error);
+    return Response.json(
+      { message: 'Failed to process text.', error: error.message || 'Unknown error' },
+      { status: 500 }
+    );
+  }
+}
+

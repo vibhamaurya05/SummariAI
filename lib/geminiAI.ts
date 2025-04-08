@@ -1,5 +1,6 @@
 import { SUMMARY_SYSTEM_PROMPT } from "@/utils/prompts";
 import { ContentListUnion, GoogleGenAI } from "@google/genai";
+import { toast } from "sonner";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -35,6 +36,48 @@ export default async function generateSummaryFromGemini(pdfText: string) {
       throw new Error("RATE_LIMIT_EXCEEDED");
     }
     console.error("Gemini API error", error);
+    throw error;
+  }
+}
+
+export async function GeminiChat(query: string) {
+  try {
+    const prompts = [
+      {
+        role: "user",
+        parts: [
+          {
+            text: `You are a helpful and friendly AI assistant. Please answer the following question accurately and clearly.`,
+          },
+          {
+            text: `Use Markdown formatting if necessary, and try to make your response easy to read.`,
+          },
+          {
+            text: `User's question:\n\n${query}`,
+          },
+        ],
+      },
+    ];
+
+
+    const modelResponse = await ai.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents: prompts,
+    });
+
+    const result = modelResponse.candidates?.[0].content?.parts?.[0].text;
+    if (result) {
+      return result;
+    } else {
+      toast("Something went wrong");
+      return "Sorry, I couldn't generate a response.";
+    }
+  } catch (error: any) {
+    if (error.message.includes("429")) {
+      throw new Error("RATE_LIMIT_EXCEEDED");
+    }
+    console.error("Gemini API error", error);
+    // toast("An error occurred while generating the response.");
     throw error;
   }
 }

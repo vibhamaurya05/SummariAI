@@ -5,6 +5,7 @@ import { fetchAndExtractPdfText } from "@/lib/langchain";
 import { formatFileNameAsTitle } from "@/utils/format-utils";
 // import { generateSummaryFromOpenAI } from "@/lib/openAi"
 import { PrismaClient } from "@prisma/client";
+import { revalidatePath } from "next/cache";
 
 const prisma = new PrismaClient();
 
@@ -89,7 +90,7 @@ export async function generatePdfSummary(
     const formatedFileName  = formatFileNameAsTitle(__filename);
     return {
       sucess: true,
-      message: "Summery generated",
+      message: "Summary generated",
       data: {
         summary,
       },
@@ -159,14 +160,19 @@ export async function storePdfSummaryAction({
         message: "Failed to save pdf summary, please try again ",
       };
     }
-    return {
-      success: true,
-      message: " pdf summary saved ",
-    };
+    return { success: true, data: savedSummary };
+   
   } catch (error) {
     return {
       success: false,
       message: error instanceof Error ? error.message : "Error saving pdf",
     };
   }
+
+  // revalidate cache
+  revalidatePath(`/summaries/${savedSummary.id}`)
+  return {
+    success: true,
+    message: " pdf summary saved ",
+  };
 }
