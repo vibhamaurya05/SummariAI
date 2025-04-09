@@ -66,57 +66,35 @@ async function embedChunks(chunks: string[]): Promise<DocumentChunk[]> {
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { text, url: webUrl } = body;
-    let webpageText = '';
+    const formData = await req.formData();
 
-    if (!text && !webUrl) {
-      return Response.json({ message: 'Text or URL is required.' }, { status: 400 });
-    }
+    const type = formData.get("type");
+    const title = formData.get("title");
+    const content = formData.get("content");
+    const file = formData.get("file");
 
-    if (webUrl) {
-      try {
-        console.log('Fetching webpage text from:', webUrl);
-
-        const loaderWithSelector = new CheerioWebBaseLoader(webUrl, {
-          selector: "p",
-        });
-
-        const docsWithSelector = await loaderWithSelector.load();
-        webpageText = docsWithSelector.map(doc => doc.pageContent).join('\n');
-
-        if (!webpageText.trim()) {
-          return Response.json({ message: 'Failed to extract any text from the webpage.' }, { status: 400 });
-        }
-
-        console.log('Successfully fetched webpage text.');
-      } catch (fetchErr: any) {
-        console.error('Failed to load webpage:', fetchErr.message);
-        return Response.json({ message: 'Failed to load or parse webpage.', error: fetchErr.message }, { status: 400 });
-      }
-    }
-
-    await clearStore();
-
-    const input = text || webpageText || "";
-    const chunks = splitText(input);
-
-    if (chunks.length === 0) {
-      return Response.json({ message: 'Could not split text into chunks.' }, { status: 400 });
-    }
-
-    const embeddedChunks = await embedChunks(chunks);
-    await addChunks(embeddedChunks);
+    console.log("✅ Received from frontend:");
+    console.log("Type:", type);
+    console.log("Title:", title);
+    console.log("Content:", typeof content === "string" ? content.slice(0, 100) : null);
+    console.log("File:", file instanceof File ? `Name: ${file.name}, Size: ${file.size}` : "No file");
 
     return Response.json({
-      message: `Successfully processed and stored ${embeddedChunks.length} chunks.`,
+      message: "✅ Successfully received data from frontend.",
+      received: {
+        type,
+        title,
+        content: typeof content === "string" ? content.slice(0, 100) : null,
+        file: file instanceof File ? { name: file.name, size: file.size } : null
+      }
     });
   } catch (error: any) {
-    console.error('Error in process route:', error);
+    console.error("❌ Error reading form data:", error);
     return Response.json(
-      { message: 'Failed to process text.', error: error.message || 'Unknown error' },
+      { message: "Failed to read data from frontend.", error: error.message || "Unknown error" },
       { status: 500 }
     );
   }
 }
+
 

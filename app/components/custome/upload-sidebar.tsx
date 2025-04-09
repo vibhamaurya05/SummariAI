@@ -12,7 +12,7 @@ export default function UploadSidebar() {
   return (
     <Sidebar className="min-h-screen bg-rose-100 border-r border-rose-200 shadow-sm">
       {/* Site Name */}
-      <SidebarHeader className="mt-12 pl-4">
+      <SidebarHeader className="mt-12 pl-4  pt-12">
         <h1 className="text-2xl font-extrabold tracking-tight">
           Summary-Chat
         </h1>

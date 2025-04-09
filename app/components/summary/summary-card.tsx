@@ -3,7 +3,7 @@ import DeleteButton from "./Deletebutton";
 import Link from "next/link";
 import { FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow } from "date-fns";
 
 const SummaryHeader = ({
   fileUrl,
@@ -16,12 +16,14 @@ const SummaryHeader = ({
 }) => {
   return (
     <div className="flex items-start gap-2 sm:gap-4">
-      <FileText className="w-6 h-6 sm:w-8 right-2 text-rose-400 mt-1" />
+      <FileText className="w-6 h-6 sm:w-8 text-rose-400 mt-1" />
       <div className="flex-1 min-w-0">
-        <h3 className="text-base xl:text-lg font-semibold text-gray-900 truncate w-4/5">
+        <h3 className="text-base xl:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate w-4/5">
           {title}
         </h3>
-        <p className="text-sm text-gray-500">{formatDistanceToNow(new Date(createdAt), {addSuffix: true})}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
+        </p>
       </div>
     </div>
   );
@@ -33,8 +35,8 @@ const StatusBadge = ({ status }: { status: string }) => {
       className={cn(
         "px-3 py-1 text-xs rounded-full capitalize",
         status === "COMPLETED"
-          ? "bg-green-100 text-green-800"
-          : "bg-yellow-100 text-yellow-800"
+          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+          : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100"
       )}
     >
       {status}
@@ -45,18 +47,21 @@ const StatusBadge = ({ status }: { status: string }) => {
 export default function SummaryCard({ summary }: { summary: any }) {
   return (
     <div>
-      <Card className="relative h-full">
+      <Card className="relative h-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 transition-colors">
         <div className="absolute top-2 right-2">
-          <DeleteButton summaryId = {summary.id}/>
+          <DeleteButton summaryId={summary.id} />
         </div>
-        <Link href={`summaries/${summary.id}`} className="block p-4 sm:p-6">
+        <Link
+          href={`summaries/${summary.id}`}
+          className="block p-4 sm:p-6 hover:bg-gray-50 dark:hover:bg-zinc-800 transition"
+        >
           <div className="flex flex-col gap-3 sm:gap-4">
             <SummaryHeader
               fileUrl={summary.original_file_url}
               title={summary.title}
-              createdAt={new Date(summary.createdAt).toLocaleDateString()}
+              createdAt={summary.createdAt}
             />
-            <p className="text-gray-600 line-clamp-2 text-sm sm:text-base pl-2">
+            <p className="text-gray-600 dark:text-gray-300 line-clamp-2 text-sm sm:text-base pl-2">
               {summary.summary_text}
             </p>
           </div>

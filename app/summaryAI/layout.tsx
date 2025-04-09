@@ -7,13 +7,13 @@ export default function UploadLayout({
     children: React.ReactNode;
   }>) {
     return (
-        <SidebarProvider >
-        <UploadSidebar />
-        <main className=" w-full">
-          <SidebarTrigger />
+        // <SidebarProvider >
+        // <UploadSidebar />
+        <main className=" w-full mt-20">
+          {/* <SidebarTrigger /> */}
           {children}
         </main>
-      </SidebarProvider>
+      // </SidebarProvider>
     );
   }
   

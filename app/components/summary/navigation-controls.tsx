@@ -23,7 +23,7 @@ export function NavigationControls({
                 size='icon'
                 onClick={onPrevious}
                 disabled={currentSection === 0}
-                className={cn(`rounded-full w-8 sm:w-12 h-8 sm:h-12 transition-all duration-200 bg-linear-to-br from-rose-500 to-rose-600 backdrop-blur-xs border border-rose-500/10`, currentSection === 0 ? 'opacity-50': 'hover:bg-rose-500/20')}>
+                className={cn(`rounded-full w-8 sm:w-12 h-8 sm:h-12 transition-all duration-200 bg-linear-to-br from-blue-500 to-blue-600 backdrop-blur-xs border border-blue-500/10`, currentSection === 0 ? 'opacity-50': 'hover:bg-blue-500/20')}>
                     <ChevronLeft className="h-6 w-6" /> 
                 </Button>
 
@@ -32,7 +32,7 @@ export function NavigationControls({
                        <button
                        key={index}
                        onClick={() => onSelectSelect(index)}
-                          className={cn(`rounded-full w-1 h-1 sm:w-2 sm:h-2 flex items-center justify-center transition-all duration-200`, currentSection === index ? 'bg-rose-500 text-white' : 'bg-rose-200 text-gray-700 hover:bg-gray-300')}
+                          className={cn(`rounded-full w-1 h-1 sm:w-2 sm:h-2 flex items-center justify-center transition-all duration-200`, currentSection === index ? 'bg-blue-500 text-white' : 'bg-blue-200 text-gray-700 hover:bg-gray-300')}
                        />
                     ))}
                 </div>
@@ -41,7 +41,7 @@ export function NavigationControls({
                 size={'icon'}
                 onClick={onNext}
                 disabled={currentSection === totalSections - 1} 
-                className={cn(`rounded-full  w-8 sm:w-12 h-8 sm:h-12  transition-all duration-200 bg-linear-to-br from-rose-500 to-rose-600 backdrop-blur-xs border border-rose-500/10`, currentSection === totalSections - 1 ? 'opacity-50': 'hover:bg-rose-500/20')}>
+                className={cn(`rounded-full  w-8 sm:w-12 h-8 sm:h-12  transition-all duration-200 bg-linear-to-br from-blue-500 to-blue-600 backdrop-blur-xs border border-blue-500/10`, currentSection === totalSections - 1 ? 'opacity-50': 'hover:bg-blue-500/20')}>
                     <ChevronRight className="h-6 w-6 " />
                 </Button>
             </div>

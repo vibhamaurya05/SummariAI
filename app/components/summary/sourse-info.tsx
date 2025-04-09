@@ -18,7 +18,7 @@ export function SourseInfo({
   return (
     <div className="flex flex-col lg:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
       <div className="flex items-center justify-center gap-2">
-        <FileText className="h-4 w-4 text-rose-400" />
+        <FileText className="h-4 w-4 text-blue-400" />
         <span>Source: {file_name}</span>
       </div>
 

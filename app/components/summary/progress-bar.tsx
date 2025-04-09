@@ -9,13 +9,13 @@ export default function ProgressEventBar({
     currentSection: number;
 }){
     return(
-        <div className="absolute top-0 left-0 right-0 z-20 bg-accent-200/50 backdrop-blur-xs pt-4 pb-2 border-b border-rose-500/10">
+        <div className="absolute top-0 left-0 right-0 z-20 bg-accent-200/50 backdrop-blur-xs pt-4 pb-2 border-b border-blue-500/10">
       <div className="px-4 flex gap-1.5">
         {sections.map((sections, index) => (
-            <div className="h-1.5 flex-1 rounded-full bg-rose-200 overflow-hidden">
+            <div className="h-1.5 flex-1 rounded-full bg-blue-100 overflow-hidden">
 
             <div key={index}
-            className={cn(` h-full bg-linear-to-r from-gray-500 to-rose-600 transition-all duration-500`, index === currentSection ? "w-full" : currentSection > index ? "w-full opacity-10" : "w-0")}>
+            className={cn(` h-full bg-linear-to-r from-gray-500 to-blue-600 transition-all duration-500`, index === currentSection ? "w-full" : currentSection > index ? "w-full opacity-10" : "w-0")}>
 
             </div>
             </div>
