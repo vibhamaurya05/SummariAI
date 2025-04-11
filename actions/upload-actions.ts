@@ -1,9 +1,9 @@
 "use server";
 
+import { createClient } from "@/lib/client";
 import generateSummaryFromGemini from "@/lib/geminiAI";
 import { fetchAndExtractPdfText } from "@/lib/langchain";
 import { formatFileNameAsTitle } from "@/utils/format-utils";
-// import { generateSummaryFromOpenAI } from "@/lib/openAi"
 import { PrismaClient } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
@@ -31,6 +31,7 @@ export async function generatePdfSummary(
   ]
 ) {
   if (!uploadResponse) {
+    console.error(" No upload response received");
     return {
       success: false,
       message: "File upload Failed",
@@ -41,11 +42,12 @@ export async function generatePdfSummary(
   const {
     serverData: {
       userId,
-      file: { url: pdfUrl, name: PdfName },
+      file: { url: pdfUrl, name: pdfName },
     },
   } = uploadResponse[0];
 
   if (!pdfUrl) {
+    console.error(" PDF URL not found");
     return {
       success: false,
       message: "File upload Failed",
@@ -55,50 +57,40 @@ export async function generatePdfSummary(
 
   try {
     const pdfText = await fetchAndExtractPdfText(pdfUrl);
-    console.log(pdfText);
+
     let summary;
     try {
       summary = await generateSummaryFromGemini(pdfText);
-      console.log(summary);
     } catch (error) {
-      console.log(error);
-      // we'll call gemini code if there is any error
-
-      // if (error instanceof Error && error.message === "RATE_LIMIT_EXCEEDED") {
-      //   try {
-      //       summary = await generateSummaryFromGemini(pdfText)
-      //   } catch (geminiError) {
-      //     console.error(
-      //       "Gemini API Failed After OpenAI Quota exceeded",
-      //       geminiError
-      //     );
-      //     throw new Error(
-      //       "Failed to generate summary  with available AI Providers"
-      //     );
-      //   }
-      // }
+      console.error("summarization failed", error);
     }
 
     if (!summary) {
       return {
         success: false,
-        message: "Failed to generate summmary",
+        message: "Failed to generate summary",
         data: null,
       };
     }
 
-    const formatedFileName  = formatFileNameAsTitle(__filename);
+    const title = formatFileNameAsTitle(pdfName);
+
     return {
-      sucess: true,
+      success: true,
       message: "Summary generated",
       data: {
         summary,
+        original_file_url: pdfUrl,
+        title,
+        file_name: pdfName,
+        userId,
       },
     };
   } catch (error) {
+    console.error(" Error during summary generation", error);
     return {
       success: false,
-      message: "File upload Failed",
+      message: "Summary generation failed",
       data: null,
     };
   }
@@ -121,32 +113,31 @@ async function savePdfSummary({
         file_name,
       },
     });
+    console.log("✅ Saved summary:", response.id);
     return response;
   } catch (error) {
-    console.error("Error while saving PDF summary", error);
+    console.error("❌ Error while saving PDF summary", error);
     throw error;
   }
 }
 
 export async function storePdfSummaryAction({
+  userId,
   original_file_url,
   summary_text,
   title,
   file_name,
 }: PdfSummaryType) {
-  // user logged in
-
-  // save the pdf summary
-  let savedSummary;
   try {
-    const userId = "123e4567-e89b-12d3-a456-426614174000";
     if (!userId) {
+      console.warn("⚠️ User ID not provided from client");
       return {
         success: false,
         message: "User not found",
       };
     }
-    savedSummary = await savePdfSummary({
+
+    const savedSummary = await savePdfSummary({
       userId,
       original_file_url,
       summary_text,
@@ -154,25 +145,18 @@ export async function storePdfSummaryAction({
       file_name,
     });
 
-    if(!savedSummary){
-      return {
-        success: false,
-        message: "Failed to save pdf summary, please try again ",
-      };
-    }
-    return { success: true, data: savedSummary };
-   
+    revalidatePath(`/summaries/${savedSummary.id}`);
+
+    return {
+      success: true,
+      data: savedSummary,
+    };
   } catch (error) {
+    console.error("❌ Failed to store PDF summary:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Error saving pdf",
+      message: error instanceof Error ? error.message : "Unknown error",
     };
   }
-
-  // revalidate cache
-  revalidatePath(`/summaries/${savedSummary.id}`)
-  return {
-    success: true,
-    message: " pdf summary saved ",
-  };
 }
+

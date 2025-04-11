@@ -18,109 +18,108 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useUploadThing } from "@/utils/uploadthings";
 import { Pencil, Save } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
+import { useTheme } from "next-themes";
 
 export default function AIChat() {
   const [contentType, setContentType] = useState("");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState<string | File>("");
   const [loading, setLoading] = useState(false);
-  const [query, setQuery] = useState<string>("");
+  const [isTrainedDataEnabled, setIsTrainedDataEnabled] = useState(false);
+  const { theme } = useTheme()
+
+  const { startUpload, routeConfig } = useUploadThing("pdfUploader", {
+    onClientUploadComplete: () => {
+      // alert("uploaded successfully");
+    },
+    onUploadError: () => {
+      // alert("error occured while uploading");
+      toast("Error occurred while uploading: don't know what the error is");
+    },
+    onUploadBegin: ({ file }: any) => {
+      console.log("Upload begun for ", file);
+    },
+  });
+
   const handleSubmit = async () => {
     if (!title || !contentType || !content) {
-      alert("Please fill all required fields.");
+      toast("Please fill all required fields.");
       return;
     }
-
+  
     setLoading(true);
-    console.log("Submitting data:", { title, contentType, content });
-
+  
     try {
+      let extractedData = "";
+  
+      // Handle PDF upload and extraction
+      if (contentType === "pdf" && content instanceof File) {
+        toast("Uploading your PDF! Hang tight...");
+  
+        const uploadResp = await startUpload([content]);
+        if (!uploadResp || !uploadResp[0]?.url) {
+          toast("Failed to upload PDF.");
+          setLoading(false);
+          return;
+        }
+  
+        toast("Parsing the PDF using LangChain...");
+  
+        const res = await fetch("/api/extractPdfText", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: uploadResp[0].url }),
+        });
+  
+        const data = await res.json();
+  
+        if (!res.ok || !data.text) {
+          toast("Failed to extract text from PDF.");
+          setLoading(false);
+          return;
+        }
+  
+        extractedData = data.text;
+      }
+  
+      // Prepare formData for processing
       const formData = new FormData();
       formData.append("title", title);
       formData.append("type", contentType);
-
-      if (contentType === "pdf" && content instanceof File) {
-        console.log("PDF file selected:", content.name);
-        formData.append("file", content);
+  
+      if (contentType === "pdf") {
+        formData.append("content", extractedData);
       } else {
-        console.log("Text/URL content:", content);
         formData.append("content", content as string);
       }
-
+  
+      // Send data to the /api/process endpoint
       const res = await fetch("/api/process", {
         method: "POST",
         body: formData,
       });
-
-      const data = await res.json();
+  
+      const result = await res.json();
       if (!res.ok) {
-        console.error("API Error:", data.message);
-        throw new Error(data.message || "Unknown error occurred");
+        throw new Error(result.message || "Error occurred during processing");
       }
-
-      console.log("Success:", data.message);
-      alert("Content embedded and stored successfully!");
-
-      // Clear input fields
+  
+      toast("Data embedded and stored successfully!");
       setTitle("");
       setContent("");
       setContentType("");
     } catch (err: any) {
-      console.error("Submission error:", err.message);
-      alert("Failed to process content.");
+      console.error("Submission Error:", err.message);
+      toast("Something went wrong!");
     } finally {
       setLoading(false);
     }
   };
-  const handlequery = async() => {
-    if (!query.trim()) {
-     console.log("please add a query first !")
-      return;
-    }
-
-    setLoading(true)
-    try {
-      const response = await fetch("/api/query", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ query }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // Check if the error is because no text was processed
-        if (
-          response.status === 400 &&
-          data.message?.includes("No text has been processed")
-        ) {
-        console.log(
-            "Error: You need to process some text first before asking a question."
-          );
-        } else {
-          throw new Error(
-            data.message || `HTTP error! status: ${response.status}`
-          );
-        }
-      } else {
-        console.log(data.answer);
-        console.log("Answer received.");
-      }
-    } catch (error: any) {
-      console.error("Query error:", error);
-      // Avoid setting error message if it was handled specifically above
-      if (!error.Message) {
-        console.log(`Query failed: ${error.message}`);
-      }
-      // setStatusMessage("");
-    } finally {
-      setLoading(false);
-    }
-  }
+  
 
   return (
     <div className="min-h-screen flex flex-col items-center px-4">
@@ -143,7 +142,8 @@ export default function AIChat() {
               </DialogTitle>
               <DialogDescription className="flex flex-col gap-4">
                 <div className="flex flex-col gap-2">
-                  <Label className="font-bold text-black">Title *</Label>
+                <Label className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
+                Title *</Label>
                   <Input
                     placeholder="Enter your title"
                     value={title}
@@ -152,7 +152,8 @@ export default function AIChat() {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <Label className="font-bold text-black">
+                <Label className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
+
                     Select Content type *
                   </Label>
                   <Select
@@ -173,14 +174,13 @@ export default function AIChat() {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <Label className="font-bold text-black">Your Content *</Label>
+                <Label className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
+                Your Content *</Label>
                   {contentType === "pdf" ? (
                     <Input
                       type="file"
                       accept=".pdf"
-                      onChange={(e) =>
-                        setContent(e.target.files?.[0] || "")
-                      }
+                      onChange={(e) => setContent(e.target.files?.[0] || "")}
                     />
                   ) : (
                     <Input
@@ -217,9 +217,37 @@ export default function AIChat() {
           may give inaccurate results.
         </p>
       </div>
+      <div className="max-w-3xl mx-auto w-full mt-4 sm:mt-12 flex items-center justify-end gap-2 mb-2 px-4">
+        <p className="text-sm font-medium">Chat with Trained Data</p>
+        <label className="inline-flex items-center cursor-pointer relative">
+  <input
+    type="checkbox"
+    className="sr-only peer"
+    checked={isTrainedDataEnabled}
+    onChange={() => setIsTrainedDataEnabled(!isTrainedDataEnabled)}
+  />
+  <div
+    className="
+      w-11 h-6 rounded-full
+      bg-gray-500 peer-checked:bg-blue-600
+      transition-colors duration-300
+    "
+  ></div>
+  <div
+    className="
+      absolute left-0.5 top-0.5
+      h-5 w-5 rounded-full bg-white
+      border border-gray-300
+      peer-checked:translate-x-full
+      transition-transform duration-300
+    "
+  ></div>
+</label>
+
+      </div>
 
       {/* ChatBox */}
-      <ChatBox />
+      <ChatBox isTrainedDataEnabled={isTrainedDataEnabled} />
     </div>
   );
 }

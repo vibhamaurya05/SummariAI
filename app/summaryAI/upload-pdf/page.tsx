@@ -7,10 +7,11 @@ import {
   generatePdfSummary,
   storePdfSummaryAction,
 } from "@/actions/upload-actions";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatFileNameAsTitle } from "@/utils/format-utils";
 import UploadPdfFrom from "@/app/components/custome/uploadForm";
+import { createClient } from "@/lib/client";
 // zod schema
 const schema = z.object({
   file: z
@@ -23,8 +24,11 @@ const schema = z.object({
     }),
 });
 
+
+
 export default function UploadPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [userID, setUserID] = useState<string| null>('')
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
   const { startUpload, routeConfig } = useUploadThing("pdfUploader", {
@@ -35,10 +39,21 @@ export default function UploadPage() {
       // alert("error occured while uploading");
       toast("Error occurred while uploading: don't know what the error is");
     },
-    onUploadBegin: ({ file }) => {
+    onUploadBegin: ({ file }:any) => {
       console.log("Upload begun for ", file);
     },
   });
+
+  useEffect(()=>{
+    const fetchUser = async()=>{
+
+      const supabase  = createClient()
+      const {data} = await supabase.auth.getUser() 
+
+      setUserID(data.user?.id || null);
+    }
+    fetchUser()
+  },[])
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
@@ -51,9 +66,6 @@ export default function UploadPage() {
       const validatedFiled = schema.safeParse({ file });
 
       if (!validatedFiled.success) {
-        // console.log(
-        //   validatedFiled.error.flatten().fieldErrors.file?.[0] ?? "Invalid file"
-        // );
         toast("validatiaon failed");
         setIsLoading(false);
         return;
@@ -73,10 +85,12 @@ export default function UploadPage() {
       toast("pdf has been Processing! hang tight our AI is looking in you pdf");
 
       // parse the pdf using lann chain
-      toast("parsing the pdf using langchain! hang tight langchain is working");
+      toast("parsing the pdf! hang tight ");
 
       const result = await generatePdfSummary(resp);
+      // alert(result)
       const { data = null, message = null } = result || {};
+      // alert(data)
       if(data){
         toast('Pdf Summmary Generated')
       }
@@ -86,7 +100,7 @@ export default function UploadPage() {
 
         if (data.summary) {
           storeResult = await storePdfSummaryAction({
-            userId: "123e4567-e89b-12d3-a456-426614174000", 
+            userId: userID as string, 
             summary_text: data.summary,
             original_file_url: resp[0]?.serverData?.file?.url || "",
             title: formatFileNameAsTitle(data.summary)||"Untitled", 

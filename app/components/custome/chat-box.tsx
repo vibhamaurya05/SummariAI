@@ -11,31 +11,61 @@ interface Message {
   text: string;
 }
 
-export default function ChatBox() {
+interface ChatBoxProps {
+  isTrainedDataEnabled: boolean;
+}
+
+const sampleQueries = [
+  "What is this app about?",
+  "How do I upload a PDF?",
+  "Give a summary of the last uploaded note.",
+  "What was the key idea in the content?",
+];
+
+export default function ChatBox({ isTrainedDataEnabled }: ChatBoxProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [hasCache, setHasCache] = useState<boolean | null>(null);
+  const [hasUserAsked, setHasUserAsked] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const { theme } = useTheme();
 
-  const sendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+  useEffect(() => {
+    const checkCache = async () => {
+      try {
+        const res = await fetch("/api/check-cache");
+        const data = await res.json();
+        setHasCache(data.cached);
+      } catch (err) {
+        console.error("Error checking cache:", err);
+        setHasCache(false);
+      }
+    };
+    checkCache();
+  }, []);
 
-    const userMessage: Message = { role: "user", text: input };
+  const sendMessage = async (query?: string) => {
+    const content = query || input.trim();
+    if (!content || isLoading || hasCache === null) return;
+
+    setHasUserAsked(true);
+    const userMessage: Message = { role: "user", text: content };
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
-    const userInput = input;
     setInput("");
 
     try {
-      const res = await fetch("/api/ai-chat", {
+      const endpoint = isTrainedDataEnabled ? "/api/query" : "/api/ai-chat";
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: userInput }),
+        body: JSON.stringify({ query: content }),
       });
 
       const data = await res.json();
-      const fullResponse = data.response || "Sorry, I couldn't generate a response.";
+      const fullResponse =
+        data.answer || data.response || "Sorry, I couldn't generate a response.";
 
       setMessages((prev) => [...prev, { role: "bot", text: "" }]);
 
@@ -73,13 +103,35 @@ export default function ChatBox() {
   }, [messages, isLoading]);
 
   return (
-    <div className={`flex flex-col max-w-3xl w-full h-[500px] sm:h-[600px] lg:h-[900px] shadow-lg rounded-2xl overflow-hidden border transition-all duration-300
+    <div
+      className={`flex flex-col max-w-3xl w-full h-full max-h-[900px] shadow-lg rounded-2xl overflow-hidden border transition-all duration-300
       ${theme === "dark" ? "bg-black border-gray-800" : "bg-white border-gray-200"}
-    `}>
+    `}
+    >
       {/* Chat Window */}
-      <div className={`flex-1 overflow-y-auto p-4 space-y-4 
+      <div
+        className={`flex-1 overflow-y-auto p-4 space-y-4 
         ${theme === "dark" ? "bg-zinc-900" : "bg-gray-50"}
-      `}>
+      `}
+      >
+        {!hasUserAsked && (
+          <div className="mb-6 w-full h-full flex flex-col items-center justify-start mt-24">
+            <h1 className="font-bold text-2xl sm:text-5xl text-center mb-4">An AI That Talk to you according to your Trainded data</h1>
+            <p className="mb-2 text-lg text-gray-500 ">Try Asking :</p>
+            <div className="flex flex-wrap gap-4 w-full items-center justify-center">
+              {sampleQueries.map((q, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => sendMessage(q)}
+                  className="text-sm px-3 py-1 rounded-full border text-blue-600 border-blue-600 hover:bg-blue-100 dark:hover:bg-zinc-800 transition"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {messages.map((msg, idx) => (
           <motion.div
             key={idx}
@@ -89,19 +141,26 @@ export default function ChatBox() {
               msg.role === "user"
                 ? "bg-blue-600 text-white self-end ml-auto"
                 : theme === "dark"
-                  ? "bg-zinc-800 text-white self-start mr-auto"
-                  : "bg-gray-200 text-gray-800 self-start mr-auto"
+                ? "bg-zinc-800 text-white self-start mr-auto"
+                : "bg-gray-200 text-gray-800 self-start mr-auto"
             }`}
           >
             {msg.role === "bot" ? (
-              <ReactMarkdown>{msg.text}</ReactMarkdown>
+              <ReactMarkdown
+                components={{
+                  p: ({ node, ...props }) => (
+                    <p className="text-gray-700 dark:text-gray-300" {...props} />
+                  ),
+                }}
+              >
+                {msg.text}
+              </ReactMarkdown>
             ) : (
               msg.text
             )}
           </motion.div>
         ))}
 
-        {/* Loading State */}
         {isLoading && (
           <motion.div
             className="w-fit p-3 rounded-xl text-blue-500 text-sm self-start mr-auto"
@@ -120,9 +179,11 @@ export default function ChatBox() {
       </div>
 
       {/* Input Area */}
-      <div className={`flex items-center gap-2 p-4 border-t transition-all duration-300
+      <div
+        className={`flex items-center gap-2 p-4 border-t transition-all duration-300
         ${theme === "dark" ? "bg-black border-zinc-800" : "bg-white border-gray-200"}
-      `}>
+      `}
+      >
         <input
           type="text"
           placeholder="Type your message..."
@@ -138,7 +199,7 @@ export default function ChatBox() {
           disabled={isLoading}
         />
         <button
-          onClick={sendMessage}
+          onClick={() => sendMessage()}
           className="bg-blue-600 p-2 rounded-full text-white hover:bg-blue-700 transition disabled:opacity-50"
           disabled={isLoading}
         >

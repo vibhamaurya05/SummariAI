@@ -1,14 +1,12 @@
-// import { metadata } from "@/app/layout";
+
+
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
 
 const f = createUploadthing();
-
 export const ourFileRouter ={
     pdfUploader: f({pdf:{maxFileSize:'32MB'}}).middleware(async({req})=>{
-        // get user info 
-        // const user = await currntUser(); // this  will be actuall user but i will make this static for now 
-        const user = "123e4567-e89b-12d3-a456-426614174000";
+        const user = '3d0c22db-0dfa-41ab-88c6-52ad504f938e';
         if(!user) throw new UploadThingError ('Unauthorized')
 
             return {userId : user}

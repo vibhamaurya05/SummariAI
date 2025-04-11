@@ -2,7 +2,7 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { getChunks, DocumentChunk } from '@/lib/store';
 
-const API_KEY = process.env.GOOGLE_API_KEY!;
+const API_KEY = process.env.GEMINI_API_KEY!;
 const EMBEDDING_MODEL_NAME = 'models/text-embedding-004';
 const GENERATION_MODEL_NAME = 'models/gemini-1.5-flash';
 

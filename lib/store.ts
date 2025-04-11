@@ -6,7 +6,7 @@ export interface DocumentChunk {
   embedding: number[];
 }
 
-const REDIS_KEY = 'documentChunks';
+const REDIS_KEY = process.env.REDIS_KEY!;
 
 // Save chunks to Redis
 export const addChunks = async (chunks: DocumentChunk[]) => {

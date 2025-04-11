@@ -1,16 +1,17 @@
 import EmptySummary from "@/app/components/summary/empty-summary";
 import SummaryCard from "@/app/components/summary/summary-card";
 import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/client";
 import { getSummaries } from "@/lib/summaries";
 import { ArrowRight, PlusIcon } from "lucide-react";
 import Link from "next/link";
 
 export default async function Dashboard() {
   const uploadLimit = 5;
-
-  const summaries =
-    (await getSummaries("123e4567-e89b-12d3-a456-426614174000")) || [];
-
+  const supabase = createClient()
+  const {data} = await supabase.auth.getUser() 
+  const userId = data?.user?.id;
+  const summaries = userId ? await getSummaries(userId) : [];
   return (
     <main className="min-h-screen bg-white dark:bg-black pt-24 pb-4 transition-colors duration-300 px-4 sm:px-0">
       <div className="container mx-auto flex flex-col gap-4">

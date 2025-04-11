@@ -27,7 +27,6 @@ export default function Nav() {
       (event, session) => {
         if (event === "SIGNED_IN") {
           setUser(session?.user);
-          toast.success("Logged in");
         } else if (event === "SIGNED_OUT") {
           setUser(null);
           toast("Logged out");
@@ -87,21 +86,21 @@ export default function Nav() {
 
           {/* Links - hidden on small screens */}
           <div className={`hidden md:flex text-lg gap-4 items-center ${theme === 'dark' ? 'text-white': 'text-black'}`}>
-            <Link href="/summaryAI" className={navLinkClass("/summaryAI")}>
+            <Link href="/summaryAI/upload-pdf" className={navLinkClass("/summaryAI")}>
               PDF Summary
             </Link>
-            <Link href="/summariAI" className={navLinkClass("/summariAI")}>
+            <Link href="/summaryAI" className={navLinkClass("/summariAI")}>
               Chat with Own Data
             </Link>
           </div>
 
           {/* Login / Logout */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 ">
             {user ? (
-              <Button onClick={handleLogout}>Logout</Button>
+              <Button className="cursor-pointer" onClick={handleLogout}>Logout</Button>
             ) : (
               <Link href="/auth/login">
-                <Button>Login</Button>
+                <Button className="cursor-pointer">Login</Button>
               </Link>
             )}
 

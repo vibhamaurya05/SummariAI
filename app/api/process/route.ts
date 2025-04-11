@@ -1,11 +1,9 @@
-
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { addChunks, clearStore, DocumentChunk } from '@/lib/store';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { addChunks, clearStore, DocumentChunk } from "@/lib/store";
 import { CheerioWebBaseLoader } from "@langchain/community/document_loaders/web/cheerio";
 
-const API_KEY = process.env.GOOGLE_API_KEY!;
-const EMBEDDING_MODEL_NAME = 'models/text-embedding-004';
-
+const API_KEY = process.env.GEMINI_API_KEY!;
+const EMBEDDING_MODEL_NAME = "models/text-embedding-004";
 const genAI = new GoogleGenerativeAI(API_KEY);
 const model = genAI.getGenerativeModel({ model: EMBEDDING_MODEL_NAME });
 
@@ -27,7 +25,9 @@ function splitText(text: string, chunkSize = 500, overlap = 50): string[] {
     }
   }
   return chunks.filter(
-    chunk => chunk.trim().length > overlap / 2 || chunk.trim().length === text.trim().length
+    (chunk) =>
+      chunk.trim().length > overlap / 2 ||
+      chunk.trim().length === text.trim().length
   );
 }
 
@@ -39,7 +39,7 @@ async function embedChunks(chunks: string[]): Promise<DocumentChunk[]> {
     const chunkBatch = chunks.slice(i, i + maxBatchSize);
 
     const result = await model.batchEmbedContents({
-      requests: chunkBatch.map(chunk => ({
+      requests: chunkBatch.map((chunk) => ({
         content: { parts: [{ text: chunk }] },
       })),
     });
@@ -47,7 +47,7 @@ async function embedChunks(chunks: string[]): Promise<DocumentChunk[]> {
     const embeddings = result.embeddings;
 
     if (embeddings.length !== chunkBatch.length) {
-      throw new Error('Mismatch between chunks and embeddings in batch');
+      throw new Error("Mismatch between chunks and embeddings in batch");
     }
 
     const processedBatch = chunkBatch.map((chunk, index) => ({
@@ -61,40 +61,103 @@ async function embedChunks(chunks: string[]): Promise<DocumentChunk[]> {
   return embeddedChunks;
 }
 
-
 // --- API Route Handler ---
 
 export async function POST(req: Request) {
   try {
-    const formData = await req.formData();
+    let text = "";
+    let webUrl = "";
+    let pdf = "";
 
-    const type = formData.get("type");
-    const title = formData.get("title");
-    const content = formData.get("content");
-    const file = formData.get("file");
+    const contentType = req.headers.get("content-type") || "";
 
-    console.log("✅ Received from frontend:");
-    console.log("Type:", type);
-    console.log("Title:", title);
-    console.log("Content:", typeof content === "string" ? content.slice(0, 100) : null);
-    console.log("File:", file instanceof File ? `Name: ${file.name}, Size: ${file.size}` : "No file");
+    if (contentType.includes("application/json")) {
+      const body = await req.json();
+      text = body.text || "";
+      webUrl = body.url || "";
+      pdf = body.pdf || "";
+    } else if (contentType.includes("multipart/form-data")) {
+      const formData = await req.formData();
+      const type = formData.get("type");
+      const content = formData.get("content")?.toString() || "";
+
+      if (type === "Note") {
+        text = content;
+      } else if (type === "webpage") {
+        webUrl = content;
+      } else if (type === "pdf") {
+        pdf = content;
+      }
+    }
+
+    // ✅ Fix: At least one input type must be present
+    if (!text && !webUrl && !pdf) {
+      return Response.json(
+        { message: "Text, PDF, or webpage URL is required." },
+        { status: 400 }
+      );
+    }
+
+    // 🧠 If PDF was submitted, treat it like a text source
+    if (pdf) {
+      text = pdf;
+    }
+
+    // Load from webpage URL if provided
+    if (webUrl) {
+      try {
+        console.log("Fetching webpage text from:", webUrl);
+        const loaderWithSelector = new CheerioWebBaseLoader(webUrl, {
+          selector: "p",
+        });
+        const docsWithSelector = await loaderWithSelector.load();
+        text = docsWithSelector.map((doc) => doc.pageContent).join("\n");
+
+        if (!text.trim()) {
+          return Response.json(
+            { message: "Failed to extract any text from the webpage." },
+            { status: 400 }
+          );
+        }
+
+        console.log("Successfully fetched webpage text.");
+      } catch (fetchErr: any) {
+        console.error("Failed to load webpage:", fetchErr.message);
+        return Response.json(
+          {
+            message: "Failed to load or parse webpage.",
+            error: fetchErr.message,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Split and Embed
+    await clearStore();
+
+    const chunks = splitText(text);
+    if (chunks.length === 0) {
+      return Response.json(
+        { message: "Could not split text into chunks." },
+        { status: 400 }
+      );
+    }
+
+    const embeddedChunks = await embedChunks(chunks);
+    await addChunks(embeddedChunks);
 
     return Response.json({
-      message: "✅ Successfully received data from frontend.",
-      received: {
-        type,
-        title,
-        content: typeof content === "string" ? content.slice(0, 100) : null,
-        file: file instanceof File ? { name: file.name, size: file.size } : null
-      }
+      message: `Successfully processed and stored ${embeddedChunks.length} chunks.`,
     });
   } catch (error: any) {
-    console.error("❌ Error reading form data:", error);
+    console.error("Error in process route:", error);
     return Response.json(
-      { message: "Failed to read data from frontend.", error: error.message || "Unknown error" },
+      {
+        message: "Failed to process content.",
+        error: error.message || "Unknown error",
+      },
       { status: 500 }
     );
   }
 }
-
-
