@@ -18,7 +18,6 @@ function parseEmojiPoint(content: string) {
 }
 
 export default function ContentSection({
-  title,
   points,
 }: {
   title: string;

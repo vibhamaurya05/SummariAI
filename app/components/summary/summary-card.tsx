@@ -5,12 +5,19 @@ import { FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 
+type Summary = {
+  id: string;
+  original_file_url: string;
+  title: string | null;
+  createdAt: string | Date; // <-- allow string or Date
+  summary_text: string;
+  status: "COMPLETED" | "PROCESSING" | string;
+};
+
 const SummaryHeader = ({
-  fileUrl,
   title,
   createdAt,
 }: {
-  fileUrl: string;
   title: string | null;
   createdAt: string;
 }) => {
@@ -44,7 +51,7 @@ const StatusBadge = ({ status }: { status: string }) => {
   );
 };
 
-export default function SummaryCard({ summary }: { summary: any }) {
+export default function SummaryCard({ summary }: { summary: Summary }) {
   return (
     <div>
       <Card className="relative h-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 transition-colors">
@@ -57,9 +64,8 @@ export default function SummaryCard({ summary }: { summary: any }) {
         >
           <div className="flex flex-col gap-3 sm:gap-4">
             <SummaryHeader
-              fileUrl={summary.original_file_url}
               title={summary.title}
-              createdAt={summary.createdAt}
+              createdAt={summary.createdAt.toString()}
             />
             <p className="text-gray-600 dark:text-gray-300 line-clamp-2 text-sm sm:text-base pl-2">
               {summary.summary_text}

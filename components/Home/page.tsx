@@ -15,7 +15,7 @@ export function HeroSection() {
         </div>
  
       <h1 className="font-bold py-6 text-center text-4xl flex-1">
-      Transform your PDF's into {' '}
+      Transform your PDF&apos;s into {' '}
         <span className="relative inline-block">
 
        <span className="relative z-10 px-2 ">concise</span><span className="absolute inset-0 bg-blue-200/50 -rotate-2 rounded-lg transform -skew-y-1"></span> 

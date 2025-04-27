@@ -32,7 +32,7 @@ export default function AIChat() {
   const [isTrainedDataEnabled, setIsTrainedDataEnabled] = useState(false);
   const { theme } = useTheme()
 
-  const { startUpload, routeConfig } = useUploadThing("pdfUploader", {
+  const { startUpload } = useUploadThing("pdfUploader", {
     onClientUploadComplete: () => {
       // alert("uploaded successfully");
     },
@@ -40,8 +40,8 @@ export default function AIChat() {
       // alert("error occured while uploading");
       toast("Error occurred while uploading: don't know what the error is");
     },
-    onUploadBegin: ({ file }: any) => {
-      console.log("Upload begun for ", file);
+    onUploadBegin: () => {
+      console.log("Upload begun for ", File);
     },
   });
 
@@ -112,10 +112,16 @@ export default function AIChat() {
       setTitle("");
       setContent("");
       setContentType("");
-    } catch (err: any) {
-      console.error("Submission Error:", err.message);
-      toast("Something went wrong!");
-    } finally {
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Submission Error:", err.message);
+        toast("Something went wrong!");
+      } else {
+        console.error("An unknown error occurred");
+        toast("Something went wrong!");
+      }
+    }
+    finally {
       setLoading(false);
     }
   };
@@ -166,9 +172,9 @@ export default function AIChat() {
                       <SelectValue placeholder="Select content type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Note">It's a Note</SelectItem>
-                      <SelectItem value="webpage">It's a Webpage</SelectItem>
-                      <SelectItem value="pdf">It's a PDF</SelectItem>
+                      <SelectItem value="Note">It&apos;s a Note</SelectItem>
+                      <SelectItem value="webpage">It&apos;s a Webpage</SelectItem>
+                      <SelectItem value="pdf">It&apos;s a PDF</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

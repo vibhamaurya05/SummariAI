@@ -33,4 +33,6 @@ const UploadPdfFrom = forwardRef<HTMLFormElement, FormInput>(
   }
 );
 
+UploadPdfFrom.displayName = "UploadPdfFrom";
+
 export default UploadPdfFrom;

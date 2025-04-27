@@ -31,13 +31,19 @@ export default async function generateSummaryFromGemini(pdfText: string) {
       console.warn("No summary returned from Gemini API.");
       return ""; // Or handle the case where no summary is available
     }
-  } catch (error: any) {
-    if (error.message.includes("429")) {
-      throw new Error("RATE_LIMIT_EXCEEDED");
+  }catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error.message.includes("429")) {
+        throw new Error("RATE_LIMIT_EXCEEDED");
+      }
+      console.error("Gemini API error", error);
+      throw error;
+    } else {
+      console.error("Unknown error occurred:", error);
+      throw new Error("Unknown error occurred during Gemini API request");
     }
-    console.error("Gemini API error", error);
-    throw error;
   }
+  
 }
 
 export async function GeminiChat(query: string) {
@@ -72,12 +78,17 @@ export async function GeminiChat(query: string) {
       toast("Something went wrong");
       return "Sorry, I couldn't generate a response.";
     }
-  } catch (error: any) {
-    if (error.message.includes("429")) {
-      throw new Error("RATE_LIMIT_EXCEEDED");
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error.message.includes("429")) {
+        throw new Error("RATE_LIMIT_EXCEEDED");
+      }
+      console.error("Gemini API error", error);
+      throw error;
+    } else {
+      console.error("Unknown error occurred:", error);
+      throw new Error("Unknown error occurred during Gemini API request");
     }
-    console.error("Gemini API error", error);
-    // toast("An error occurred while generating the response.");
-    throw error;
   }
+  
 }

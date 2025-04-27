@@ -1,5 +1,4 @@
-
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getChunks, DocumentChunk } from '@/lib/store';
 
 const API_KEY = process.env.GEMINI_API_KEY!;
@@ -7,6 +6,7 @@ const EMBEDDING_MODEL_NAME = 'models/text-embedding-004';
 const GENERATION_MODEL_NAME = 'models/gemini-1.5-flash';
 
 const genAI = new GoogleGenerativeAI(API_KEY);
+
 // model for embedding
 const embeddingModel = genAI.getGenerativeModel({ model: EMBEDDING_MODEL_NAME });
 // model for generation
@@ -47,10 +47,8 @@ async function generateAnswer(query: string, relevantChunks: DocumentChunk[]): P
   let prompt = '';
 
   if (relevantChunks.length === 0) {
-    // No context found — let the model answer based on its own knowledge
     prompt = `No context is available. Please answer the following question based on your general knowledge.\n\nQuestion: ${query}\nAnswer:`;
   } else {
-    // Provide context to guide the model's response
     const context = relevantChunks.map(chunk => chunk.text).join('\n\n---\n\n');
     prompt = `Context: ---\n${context}\n---\n\nQuestion: ${query}\nAnswer:`;
   }
@@ -58,15 +56,15 @@ async function generateAnswer(query: string, relevantChunks: DocumentChunk[]): P
   try {
     const result = await generationModel.generateContent(prompt);
     return result.response.text();
-  } catch (error: any) {
-    console.error('Error generating answer:', error);
-    if (error.message?.includes('SAFETY')) {
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('Error generating answer:', err);
+    if (err.message?.includes('SAFETY')) {
       return 'The response was blocked due to safety settings.';
     }
     return 'Sorry, something went wrong while generating the answer.';
   }
 }
-
 
 // --- API Route Handler ---
 
@@ -88,10 +86,11 @@ export async function POST(req: Request) {
     const answer = await generateAnswer(query, relevantChunks);
 
     return Response.json({ answer });
-  } catch (error: any) {
-    console.error('Error in query route:', error);
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('Error in query route:', err);
     return Response.json(
-      { message: 'Failed to process query.', error: error.message || 'Unknown error' },
+      { message: 'Failed to process query.', error: err.message || 'Unknown error' },
       { status: 500 }
     );
   }

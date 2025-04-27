@@ -8,10 +8,11 @@ import { toast } from "sonner";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
+import type { Session } from "@supabase/supabase-js";
 
 export default function Nav() {
   const supabase = createClient();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<Session["user"] | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
@@ -26,7 +27,7 @@ export default function Nav() {
     const { data: listener } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (event === "SIGNED_IN") {
-          setUser(session?.user);
+          setUser(session?.user ?? null);
         } else if (event === "SIGNED_OUT") {
           setUser(null);
           toast("Logged out");
@@ -35,9 +36,9 @@ export default function Nav() {
     );
 
     return () => {
-      listener.subscription.unsubscribe();
+      listener?.subscription?.unsubscribe();
     };
-  }, []);
+  }, [supabase.auth]);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
@@ -62,16 +63,15 @@ export default function Nav() {
   return (
     <div className="fixed top-5 left-0 right-0 z-50 px-4">
       <div
-       className={`transition-all duration-300 mx-auto ${
-        scrolled
-          ? "max-w-3xl rounded-xl shadow-md border border-blue-300/30 bg-white/70 dark:bg-black/70 backdrop-blur-md"
-          : "max-w-7xl border-none bg-white/0 dark:bg-black/0"
-      }`}
-      
+        className={`transition-all duration-300 mx-auto ${
+          scrolled
+            ? "max-w-3xl rounded-xl shadow-md border border-blue-300/30 bg-white/70 dark:bg-black/70 backdrop-blur-md"
+            : "max-w-7xl border-none bg-white/0 dark:bg-black/0"
+        }`}
       >
         <div className="flex items-center justify-between py-2 px-3">
           {/* Logo */}
-          <Link href="/" className="flex  gap-2 items-center">
+          <Link href="/" className="flex gap-2 items-center">
             <video
               autoPlay
               muted
@@ -84,20 +84,32 @@ export default function Nav() {
             <span className="text-xl font-bold">SummaryPDF</span>
           </Link>
 
-          {/* Links - hidden on small screens */}
-          <div className={`hidden md:flex text-lg gap-4 items-center ${theme === 'dark' ? 'text-white': 'text-black'}`}>
-            <Link href="/summaryAI/upload-pdf" className={navLinkClass("/summaryAI")}>
+          {/* Links */}
+          <div
+            className={`hidden md:flex text-lg gap-4 items-center ${
+              theme === "dark" ? "text-white" : "text-black"
+            }`}
+          >
+            <Link
+              href="/summaryAI/upload-pdf"
+              className={navLinkClass("/summaryAI")}
+            >
               PDF Summary
             </Link>
-            <Link href="/summaryAI" className={navLinkClass("/summariAI")}>
+            <Link
+              href="/summaryAI"
+              className={navLinkClass("/summariAI")}
+            >
               Chat with Own Data
             </Link>
           </div>
 
-          {/* Login / Logout */}
-          <div className="flex items-center gap-2 ">
+          {/* Auth & Theme */}
+          <div className="flex items-center gap-2">
             {user ? (
-              <Button className="cursor-pointer" onClick={handleLogout}>Logout</Button>
+              <Button className="cursor-pointer" onClick={handleLogout}>
+                Logout
+              </Button>
             ) : (
               <Link href="/auth/login">
                 <Button className="cursor-pointer">Login</Button>

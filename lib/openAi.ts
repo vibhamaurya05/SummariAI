@@ -23,10 +23,17 @@ export async function generateSummaryFromOpenAI(pdfText: string) {
     });
 
     return completion.choices[0].message.content;
-  } catch (error: any) {
-    if (error?.status === 429) {
-      throw new Error("RATE_LIMIT_EXCEEDED");
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error.message.includes("429")) {
+        throw new Error("RATE_LIMIT_EXCEEDED");
+      }
+      console.error("OpenAI API error", error);
+      throw error;
+    } else {
+      console.error("Unknown error occurred:", error);
+      throw new Error("Unknown error occurred during Gemini API request");
     }
-    throw error;
   }
+  
 }

@@ -5,7 +5,7 @@ import { UploadThingError } from "uploadthing/server";
 
 const f = createUploadthing();
 export const ourFileRouter ={
-    pdfUploader: f({pdf:{maxFileSize:'32MB'}}).middleware(async({req})=>{
+    pdfUploader: f({pdf:{maxFileSize:'32MB'}}).middleware(async({})=>{
         const user = '3d0c22db-0dfa-41ab-88c6-52ad504f938e';
         if(!user) throw new UploadThingError ('Unauthorized')
 

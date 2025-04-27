@@ -37,10 +37,15 @@ export default function WebUrl(){
     
         //   setStatusMessage(data.message || "Webpage processed successfully!");
           setWebUrl("");
-        } catch (error: any) {
-          console.error("Webpage processing error:", error);
-        //   setErrorMessage(`Webpage processing failed: ${error.message}`);
-        //   setStatusMessage("");
+        } catch (error: unknown) {
+          if (error instanceof Error) {
+            console.error("Webpage processing error:", error);
+            // Optionally set error message or status message here
+            // setErrorMessage(`Webpage processing failed: ${error.message}`);
+            // setStatusMessage("");
+          } else {
+            console.error("Unknown error occurred during webpage processing:", error);
+          }
         } finally {
           setIsLoadingProcessing(false);
         }

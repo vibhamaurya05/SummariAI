@@ -146,15 +146,15 @@ export default function ChatBox({ isTrainedDataEnabled }: ChatBoxProps) {
             }`}
           >
             {msg.role === "bot" ? (
-              <ReactMarkdown
-                components={{
-                  p: ({ node, ...props }) => (
-                    <p className="text-gray-700 dark:text-gray-300" {...props} />
-                  ),
-                }}
-              >
-                {msg.text}
-              </ReactMarkdown>
+             <ReactMarkdown
+             components={{
+               p: (props) => (
+                 <p className="text-gray-700 dark:text-gray-300" {...props} />
+               ),
+             }}
+           >
+             {msg.text}
+           </ReactMarkdown>
             ) : (
               msg.text
             )}
