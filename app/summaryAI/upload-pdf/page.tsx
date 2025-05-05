@@ -11,7 +11,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatFileNameAsTitle } from "@/utils/format-utils";
 import UploadPdfFrom from "@/app/components/custome/uploadForm";
-import { createClient } from "@/lib/client";
+import { supabase } from '@/lib/client'
 
 // zod schema
 const schema = z.object({
@@ -42,10 +42,12 @@ export default function UploadPage() {
     },
   });
 
+
   useEffect(() => {
     const fetchUser = async () => {
-      const supabase = createClient();
       const { data } = await supabase.auth.getUser();
+      const userId = JSON.stringify(data?.user?.id,null,2)
+      console.log("User data", userId);
       setUserID(data?.user?.id || null);
     };
     fetchUser();
@@ -71,7 +73,9 @@ export default function UploadPage() {
 
       // Upload the PDF to UploadThing
       const resp = await startUpload([file]);
-      if (!resp) {
+      console.log("Upload response", JSON.stringify(resp, null, 2));
+      // alert(JSON.stringify(resp, null, 2));
+      if (!resp || !resp[0]?.serverData) {
         toast("Something went wrong during upload.");
         setIsLoading(false);
         return;
@@ -130,7 +134,7 @@ export default function UploadPage() {
     <div className="max-w-4xl mx-auto my-12 flex flex-col items-center justify-center px-4">
       <h1 className="text-3xl mb-12 font-bold flex items-center gap-2">
         Upload your PDF and see its{" "}
-        <span className="border border-rose-500 rounded-full px-3 capitalize bg-rose-200 hover:rotate-5 transform transition-all duration-300 py-1">
+        <span className="border border-blue-500 rounded-full px-3 capitalize bg-blue-200 hover:rotate-5 transform transition-all duration-300 py-1">
           insights
         </span>
       </h1>

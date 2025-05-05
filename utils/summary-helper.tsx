@@ -7,7 +7,7 @@
       : title.trim();
   
     // content parsing
-    const points: String[] = [];
+    const points: string[] = [];
     let currentPoint = "";
     content.forEach((line) => {
       const trimmedLine = line.trim();

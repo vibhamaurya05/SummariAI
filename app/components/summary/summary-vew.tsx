@@ -35,16 +35,24 @@ export function SummaryViewer({ summary }: { summary: string }) {
 
   return (
     <Card className="relative px-2 h-[500px] sm:h-[600px] lg:h-[700px] w-full xl:w-[600px] overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 dark:from-zinc-900 dark:to-zinc-950 backdrop-blur-sm border border-blue-500/10 dark:border-zinc-700 shadow-lg shadow-blue-500/20 dark:shadow-none transition-colors text-gray-900 dark:text-white">
-      
       {/* Progress Bar */}
-      <ProgressEventBar sections={sections} currentSection={currentSection} />
+      <ProgressEventBar
+        sections={sections.map((section) => section.title)}
+        currentSection={currentSection}
+      />
 
       <div className="h-full overflow-y-auto scrollbar-hide pt-4 sm:pt-16 pb-24">
-        <div className="w-full sm:px-6 px-4"> {/* <- Add padding on small screens */}
+        <div className="w-full sm:px-6 px-4">
+          {" "}
+          {/* <- Add padding on small screens */}
           <SectionTitle title={sections[currentSection].title} />
           <ContentSection
-            title={sections[currentSection]?.title || ""}
-            points={sections[currentSection]?.points || ""}
+            title={sections[currentSection]?.title || ""} // Safe check for title
+            points={
+              Array.isArray(sections[currentSection]?.points)
+                ? sections[currentSection]?.points
+                : []
+            } // Ensure points is always an array
           />
         </div>
       </div>

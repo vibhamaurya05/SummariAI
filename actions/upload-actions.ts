@@ -20,37 +20,33 @@ interface PdfSummaryType {
 export async function generatePdfSummary(
   uploadResponse: [
     {
+      name: string;  // File name
       serverData: {
         userId: string;
-        file: {
-          url: string;
-          name: string;
-        };
+        fileUrl: string; // File URL
       };
     }
   ]
 ) {
-  if (!uploadResponse) {
-    console.error(" No upload response received");
+  if (!uploadResponse || !uploadResponse[0]) {
+    console.error("No upload response received");
     return {
       success: false,
-      message: "File upload Failed",
+      message: "File upload failed",
       data: null,
     };
   }
 
   const {
-    serverData: {
-      userId,
-      file: { url: pdfUrl, name: pdfName },
-    },
+    name: pdfName,
+    serverData: { userId, fileUrl: pdfUrl },
   } = uploadResponse[0];
 
   if (!pdfUrl) {
-    console.error(" PDF URL not found");
+    console.error("PDF URL not found");
     return {
       success: false,
-      message: "File upload Failed",
+      message: "File upload failed",
       data: null,
     };
   }
@@ -62,7 +58,7 @@ export async function generatePdfSummary(
     try {
       summary = await generateSummaryFromGemini(pdfText);
     } catch (error) {
-      console.error("summarization failed", error);
+      console.error("Summarization failed", error);
     }
 
     if (!summary) {
@@ -87,7 +83,7 @@ export async function generatePdfSummary(
       },
     };
   } catch (error) {
-    console.error(" Error during summary generation", error);
+    console.error("Error during summary generation", error);
     return {
       success: false,
       message: "Summary generation failed",
@@ -95,6 +91,7 @@ export async function generatePdfSummary(
     };
   }
 }
+
 
 async function savePdfSummary({
   userId,

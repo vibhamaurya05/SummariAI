@@ -2,35 +2,41 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/client";
 import Link from "next/link";
 import { toast } from "sonner";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
+import { supabase } from "@/lib/client";
 
 export default function Nav() {
-  const supabase = createClient();
   const [user, setUser] = useState<Session["user"] | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     const getUser = async () => {
       const { data } = await supabase.auth.getUser();
+
       setUser(data.user);
     };
     getUser();
-
+    const getsession = async () => {
+      const { data } = await supabase.auth.getSession();    
+     
+    }
+    getsession()
     const { data: listener } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (event === "SIGNED_IN") {
           setUser(session?.user ?? null);
         } else if (event === "SIGNED_OUT") {
           setUser(null);
-          toast("Logged out");
+          toast.success("Logged out");
+          router.push("/auth/login"); 
         }
       }
     );
@@ -38,7 +44,7 @@ export default function Nav() {
     return () => {
       listener?.subscription?.unsubscribe();
     };
-  }, [supabase.auth]);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
@@ -51,6 +57,7 @@ export default function Nav() {
     if (error) {
       toast.error("Logout failed");
     }
+    
   };
 
   const navLinkClass = (path: string) =>
@@ -81,7 +88,7 @@ export default function Nav() {
             >
               <source src="/ai-logo.mp4" type="video/mp4" />
             </video>
-            <span className="text-xl font-bold">SummaryPDF</span>
+            <span className="text-xl font-bold">Brainwave</span>
           </Link>
 
           {/* Links */}
@@ -92,14 +99,11 @@ export default function Nav() {
           >
             <Link
               href="/summaryAI/upload-pdf"
-              className={navLinkClass("/summaryAI")}
+              className={navLinkClass("/summaryAI/upload-pdf")}
             >
               PDF Summary
             </Link>
-            <Link
-              href="/summaryAI"
-              className={navLinkClass("/summariAI")}
-            >
+            <Link href="/summaryAI" className={navLinkClass("/summariAI")}>
               Chat with Own Data
             </Link>
           </div>
@@ -107,23 +111,23 @@ export default function Nav() {
           {/* Auth & Theme */}
           <div className="flex items-center gap-2">
             {user ? (
-              <Button className="cursor-pointer" onClick={handleLogout}>
+              <Button className="cursor-pointer bg-blue-500 text-white rounded-full hover:bg-blue-400 px-6 py-3" onClick={handleLogout}>
                 Logout
               </Button>
             ) : (
               <Link href="/auth/login">
-                <Button className="cursor-pointer">Login</Button>
+                <Button className="cursor-pointer bg-blue-500 text-white rounded-full hover:bg-blue-400 px-6 py-3">Login</Button>
               </Link>
             )}
 
             <div
-              className="cursor-pointer p-2 rounded-full border border-stone-200/30"
+              className="cursor-pointer p-1 rounded-full border border-stone-200/30"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             >
               {theme === "dark" ? (
-                <Sun className="w-5 h-5 text-yellow-400" />
+                <Sun className="w-4 h-4 text-yellow-400" />
               ) : (
-                <Moon className="w-5 h-5 text-blue-600" />
+                <Moon className="w-4 h-4 text-blue-600" />
               )}
             </div>
           </div>

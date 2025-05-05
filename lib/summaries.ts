@@ -1,10 +1,12 @@
 import { prisma } from "@/lib/prisma";
 
 export async function getSummaries(userId: string) {
+    // console.log("Fetching summaries for user ID:", userId);
     try {
         const response = await prisma.pdf_summary.findMany({
             where: { userId: userId },
         });
+        // console.log("Fetched summaries:", response);
 
         if (response.length === 0) {
             console.log("No summaries found for this user");

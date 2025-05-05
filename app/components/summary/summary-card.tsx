@@ -54,13 +54,13 @@ const StatusBadge = ({ status }: { status: string }) => {
 export default function SummaryCard({ summary }: { summary: Summary }) {
   return (
     <div>
-      <Card className="relative h-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 transition-colors">
+      <Card className="relative h-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 transition-colors hover:bg-gray-50 dark:hover:bg-zinc-800 ">
         <div className="absolute top-2 right-2">
           <DeleteButton summaryId={summary.id} />
         </div>
         <Link
           href={`summaries/${summary.id}`}
-          className="block p-4 sm:p-6 hover:bg-gray-50 dark:hover:bg-zinc-800 transition"
+          className="block p-4 sm:p-6 "
         >
           <div className="flex flex-col gap-3 sm:gap-4">
             <SummaryHeader

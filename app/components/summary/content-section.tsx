@@ -1,3 +1,5 @@
+import React from "react";
+
 function parsePoint(point: string) {
   const isNumber = /^\d+\. /.test(point);
   const isBullet = /^\* /.test(point);
@@ -18,13 +20,18 @@ function parseEmojiPoint(content: string) {
 }
 
 export default function ContentSection({
+  title,
   points,
 }: {
-  title: string;
-  points: string[];
+  title: string;  // Ensure title is passed and used
+  points: string[] // Ensure points is typed correctly as string[]
 }) {
   return (
     <div className="space-y-4">
+      {/* Render the title */}
+      <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{title}</h3>
+
+      {/* Render each point */}
       {points.map((point, index) => {
         const { isBullet, hasemoji, isEmpty } = parsePoint(point);
         const { emoji, text } = parseEmojiPoint(point);
